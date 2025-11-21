@@ -80,8 +80,8 @@ defineModule(sim, list(
                     desc = "A list of jurisdictions to run"),
   ),
   inputObjects = bindrows(
-    expectsInput(objectName = "caribouLoc", objectClass = "data.table", 
-                 desc = "Harmonized and cleaned caribou locations of all jurisdictions provided")
+    expectsInput(objectName = "extractLand", objectClass = "data.table", 
+                 desc = "Landscape values and distance calculations matched by year to points")
     #_targets outpputs
   ),
   outputObjects = bindrows(
@@ -118,19 +118,15 @@ Init <- function(sim) {
   dPath <- asPath(getOption("reproducible.destinationPath", dataPath(sim)), 1)
   message(currentModule(sim), ": using dataPath '", dPath, "'.")
 
-  # i think this should be a prepInputs call for the iSSAprep function
-  dat_iSSA <- sim$caribouLoc 
   
   return(invisible(sim))
 }
 
 iSSAprep <- function(dat_iSSA){
   set.seed(53)
-  #########################################################################################
   
-  #dat <- readRDS(file.path(derived, 'dat_iSSA.RDS'))
   #maybe have the subsetting dynamically with params would be a good idea
-  dat <- data.frame(sim$caribouLoc)
+  dat <- sim$extractLand
   
   dat[,range(year), by = .(jurisdiction)]
   
@@ -139,6 +135,7 @@ iSSAprep <- function(dat_iSSA){
   #setindex(dat, NULL)
   
   juris <- list()
+  
   ### mb ----
   mb.2015 <- dat[jurisdiction == 'mb' & int.year ==2015]
   length(unique(mb.2015$id))*.5
@@ -201,226 +198,3 @@ iSSAprep <- function(dat_iSSA){
     })
     sim$glmm.sum
   }
-  
-  
-  #### nwt ----
-  # gc()
-  # m.nwt <- glmmTMB(case_ ~ -1 +
-  #                    I(log(sl_+1)) +
-  #                    I(cos(ta_)) +
-  #                    I(log(sl_+1)):I(cos(ta_)) +
-  #                    prop_needleleaf_start:I(log(sl_+1)) + 
-  #                    prop_mixforest_start:I(log(sl_+1)) + 
-  #                    prop_veg_start:I(log(sl_+1)) + 
-  #                    prop_wets_start:I(log(sl_+1)) +
-  #                    prop_needleleaf_end +
-  #                    prop_mixforest_end +
-  #                    prop_veg_end +
-  #                    prop_wets_end +
-  #                    I(log(ts_fires_end+1)) + 
-  #                    I(log(sl_+1)):I(log(ts_fires_start+1)) +
-  #                    I(log(ts_harv_end+1)) + 
-  #                    I(log(sl_+1)):I(log(ts_harv_start+1)) +
-  #                    I(log(distlf_end+1)) + 
-  #                    I(log(sl_+1)):I(log(distlf_start+1)) +
-  #                    I(log(distlf_other_end+1)) + 
-  #                    I(log(sl_+1)):I(log(distlf_other_start+1)) +
-  #                    disturbance_end +
-  #                    (1|indiv_step_id) +
-  #                    (0 + I(log(sl_ +1))|id) +
-  #                    (0 + I(cos(ta_))|id) +
-  #                    (0 + I(log(sl_+1)):I(cos(ta_))|id) +
-  #                    (0 + prop_needleleaf_start:I(log(sl_+1))|id) + 
-  #                    (0 + prop_mixforest_start:I(log(sl_+1))|id) + 
-  #                    (0 + prop_veg_start:I(log(sl_+1))|id) + 
-  #                    (0 + prop_wets_start:I(log(sl_+1))|id) +
-  #                    (0 + prop_needleleaf_end|id) +
-  #                    (0 + prop_mixforest_end|id) +
-  #                    (0 + prop_veg_end|id) +
-  #                    (0 + prop_wets_end|id) +
-  #                    (0 + (I(log(ts_fires_end+1)))|id) +
-  #                    (0 + I(log(sl_+1)):I(log(ts_fires_start+1))|id) +
-  #                    (0 + (I(log(ts_harv_end+1)))|id) + 
-  #                    (0 + I(log(sl_+1)):I(log(ts_harv_start+1))|id) + 
-  #                    (0 + I(log(distlf_end+1))|id) + 
-  #                    (0 + I(log(sl_+1)):I(log(distlf_start+1))|id) +
-  #                    (0 + I(log(distlf_other_end+1))|id) + 
-  #                    (0 + I(log(sl_+1)):I(log(distlf_other_start+1))|id) +
-  #                    (0 + disturbance_end|id) +
-  #                    (1|year),
-  #                  family = poisson(), data = nwt,
-  #                  map= list(theta = factor(c(NA,1:21))),
-  #                  start = list(theta =c(log(1000), seq(0,0, length.out = 21)))
-  # )
-  # 
-  # 
-  # 
-  # summary(m.nwt)
-  # saveRDS(m.nwt, file.path(derived, 'mod_selmove_nwt.RDS'))
-  # 
-  # 
-  # #### bc ----
-  # gc()
-  # m.bc <- glmmTMB(case_ ~ -1 +
-  #                   I(log(sl_+1)) +
-  #                   I(cos(ta_)) +
-  #                   I(log(sl_+1)):I(cos(ta_)) +
-  #                   prop_needleleaf_start:I(log(sl_+1)) + 
-  #                   prop_mixforest_start:I(log(sl_+1)) + 
-  #                   prop_veg_start:I(log(sl_+1)) + 
-  #                   prop_wets_start:I(log(sl_+1)) +
-  #                   prop_needleleaf_end +
-  #                   prop_mixforest_end +
-  #                   prop_veg_end +
-  #                   prop_wets_end +
-  #                   I(log(ts_fires_end+1)) + 
-  #                   I(log(sl_+1)):I(log(ts_fires_start+1)) +
-  #                   I(log(ts_harv_end+1)) + 
-  #                   I(log(sl_+1)):I(log(ts_harv_start+1)) +
-  #                   I(log(distlf_end+1)) + 
-  #                   I(log(sl_+1)):I(log(distlf_start+1)) +
-  #                   I(log(distlf_other_end+1)) + 
-  #                   I(log(sl_+1)):I(log(distlf_other_start+1)) +
-  #                   disturbance_end +
-  #                   (1|indiv_step_id) +
-  #                   (0 + I(log(sl_ +1))|id) +
-  #                   (0 + I(cos(ta_))|id) +
-  #                   (0 + I(log(sl_+1)):I(cos(ta_))|id) +
-  #                   (0 + prop_needleleaf_start:I(log(sl_+1))|id) + 
-  #                   (0 + prop_mixforest_start:I(log(sl_+1))|id) + 
-  #                   (0 + prop_veg_start:I(log(sl_+1))|id) + 
-  #                   (0 + prop_wets_start:I(log(sl_+1))|id) +
-  #                   (0 + prop_needleleaf_end|id) +
-  #                   (0 + prop_mixforest_end|id) +
-  #                   (0 + prop_veg_end|id) +
-  #                   (0 + prop_wets_end|id) +
-  #                   (0 + (I(log(ts_fires_end+1)))|id) +
-  #                   (0 + I(log(sl_+1)):I(log(ts_fires_start+1))|id) +
-  #                   (0 + (I(log(ts_harv_end+1)))|id) + 
-  #                   (0 + I(log(sl_+1)):I(log(ts_harv_start+1))|id) + 
-  #                   (0 + I(log(distlf_end+1))|id) + 
-  #                   (0 + I(log(sl_+1)):I(log(distlf_start+1))|id) +
-  #                   (0 + I(log(distlf_other_end+1))|id) + 
-  #                   (0 + I(log(sl_+1)):I(log(distlf_other_start+1))|id) +
-  #                   (0 + disturbance_end|id) +
-  #                   (1|year),
-  #                 family = poisson(), data = bc,
-  #                 map= list(theta = factor(c(NA,1:21))),
-  #                 start = list(theta =c(log(1000), seq(0,0, length.out = 21)))
-  # )
-  # 
-  # 
-  # 
-  # summary(m.bc)
-  # saveRDS(m.bc, file.path(derived, 'mod_selmove_bc.RDS'))
-  # 
-  # 
-  # #### sk ----
-  # gc()
-  # m.sk <- glmmTMB(case_ ~ -1 +
-  #                   I(log(sl_+1)) +
-  #                   I(cos(ta_)) +
-  #                   I(log(sl_+1)):I(cos(ta_)) +
-  #                   prop_needleleaf_start:I(log(sl_+1)) + 
-  #                   prop_mixforest_start:I(log(sl_+1)) + 
-  #                   prop_veg_start:I(log(sl_+1)) + 
-  #                   prop_wets_start:I(log(sl_+1)) +
-  #                   prop_needleleaf_end +
-  #                   prop_mixforest_end +
-  #                   prop_veg_end +
-  #                   prop_wets_end +
-  #                   I(log(ts_fires_end+1)) + 
-  #                   I(log(sl_+1)):I(log(ts_fires_start+1)) +
-  #                   I(log(ts_harv_end+1)) + 
-  #                   I(log(sl_+1)):I(log(ts_harv_start+1)) +
-  #                   I(log(distlf_end+1)) + 
-  #                   I(log(sl_+1)):I(log(distlf_start+1)) +
-  #                   I(log(distlf_other_end+1)) + 
-  #                   I(log(sl_+1)):I(log(distlf_other_start+1)) +
-  #                   disturbance_end +
-  #                   (1|indiv_step_id) +
-  #                   (0 + I(log(sl_ +1))|id) +
-  #                   (0 + I(cos(ta_))|id) +
-  #                   (0 + I(log(sl_+1)):I(cos(ta_))|id) +
-  #                   (0 + prop_needleleaf_start:I(log(sl_+1))|id) + 
-  #                   (0 + prop_mixforest_start:I(log(sl_+1))|id) + 
-  #                   (0 + prop_veg_start:I(log(sl_+1))|id) + 
-  #                   (0 + prop_wets_start:I(log(sl_+1))|id) +
-  #                   (0 + prop_needleleaf_end|id) +
-  #                   (0 + prop_mixforest_end|id) +
-  #                   (0 + prop_veg_end|id) +
-  #                   (0 + prop_wets_end|id) +
-  #                   (0 + (I(log(ts_fires_end+1)))|id) +
-  #                   (0 + I(log(sl_+1)):I(log(ts_fires_start+1))|id) +
-  #                   (0 + (I(log(ts_harv_end+1)))|id) + 
-  #                   (0 + I(log(sl_+1)):I(log(ts_harv_start+1))|id) + 
-  #                   (0 + I(log(distlf_end+1))|id) + 
-  #                   (0 + I(log(sl_+1)):I(log(distlf_start+1))|id) +
-  #                   (0 + I(log(distlf_other_end+1))|id) + 
-  #                   (0 + I(log(sl_+1)):I(log(distlf_other_start+1))|id) +
-  #                   (0 + disturbance_end|id) +
-  #                   (1|year),
-  #                 family = poisson(), data = sk,
-  #                 map= list(theta = factor(c(NA,1:21))),
-  #                 start = list(theta =c(log(1000), seq(0,0, length.out = 21)))
-  # )
-  # 
-  # 
-  # 
-  # summary(m.sk)
-  # saveRDS(m.sk, file.path(derived, 'mod_selmove_sk.RDS'))
-  # 
-  # #### mb ----
-  # gc()
-  # p1 <- m.mb.2015.sub <- glmmTMB(case_ ~ -1 +
-  #                                  I(log(sl_+1)) +
-  #                                  I(cos(ta_)) +
-  #                                  I(log(sl_+1)):I(cos(ta_)) +
-  #                                  prop_needleleaf_start:I(log(sl_+1)) + 
-  #                                  prop_mixforest_start:I(log(sl_+1)) + 
-  #                                  prop_veg_start:I(log(sl_+1)) + 
-  #                                  prop_wets_start:I(log(sl_+1)) +
-  #                                  prop_needleleaf_end +
-  #                                  prop_mixforest_end +
-  #                                  prop_veg_end +
-  #                                  prop_wets_end +
-  #                                  I(log(ts_fires_end+1)) + 
-  #                                  I(log(sl_+1)):I(log(ts_fires_start+1)) +
-  #                                  I(log(ts_harv_end+1)) + 
-  #                                  I(log(sl_+1)):I(log(ts_harv_start+1)) +
-  #                                  I(log(distlf_end+1)) + 
-  #                                  I(log(sl_+1)):I(log(distlf_start+1)) +
-  #                                  I(log(distlf_other_end+1)) + 
-  #                                  I(log(sl_+1)):I(log(distlf_other_start+1)) +
-  #                                  disturbance_end +
-  #                                  (1|indiv_step_id) +
-  #                                  (0 + I(log(sl_ +1))|id) +
-  #                                  (0 + I(cos(ta_))|id) +
-  #                                  (0 + I(log(sl_+1)):I(cos(ta_))|id) +
-  #                                  (0 + prop_needleleaf_start:I(log(sl_+1))|id) + 
-  #                                  (0 + prop_mixforest_start:I(log(sl_+1))|id) + 
-  #                                  (0 + prop_veg_start:I(log(sl_+1))|id) + 
-  #                                  (0 + prop_wets_start:I(log(sl_+1))|id) +
-  #                                  (0 + prop_needleleaf_end|id) +
-  #                                  (0 + prop_mixforest_end|id) +
-  #                                  (0 + prop_veg_end|id) +
-  #                                  (0 + prop_wets_end|id) +
-  #                                  (0 + (I(log(ts_fires_end+1)))|id) +
-  #                                  (0 + I(log(sl_+1)):I(log(ts_fires_start+1))|id) +
-  #                                  (0 + (I(log(ts_harv_end+1)))|id) + 
-  #                                  (0 + I(log(sl_+1)):I(log(ts_harv_start+1))|id) + 
-  #                                  (0 + I(log(distlf_end+1))|id) + 
-  #                                  (0 + I(log(sl_+1)):I(log(distlf_start+1))|id) +
-  #                                  (0 + I(log(distlf_other_end+1))|id) + 
-  #                                  (0 + I(log(sl_+1)):I(log(distlf_other_start+1))|id) +
-  #                                  (0 + disturbance_end|id) 
-  #                                ,
-  #                                family = poisson(), data = mb.2015.sub,
-  #                                map= list(theta = factor(c(NA,1:20))),
-  #                                start = list(theta =c(log(1000), seq(0,0, length.out = 20))),
-  #                                verbose = TRUE
-  # )
-  # 
-  # 
-  # 
-  # summary(m.mb.2015.sub)
