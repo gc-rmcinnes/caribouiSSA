@@ -103,8 +103,11 @@ doEvent.caribouiSSA = function(sim, eventTime, eventType) {
 }
 
 Init <- function(sim) {
-  #This will be where the iSSA gets forcast
-  runiSSA <- iSSA(dat_iSSA)
+  #This will be where the iSSA gets created
+  jurisList <- iSSAprep(sim)
+  sim <- iSSAmodel(sim, jurisList)
+  
+  return(invisible(sim))
   #xgboost function can also be called here
   #maybe a parameter that gets the model that the user wants?
   
@@ -122,79 +125,67 @@ Init <- function(sim) {
   return(invisible(sim))
 }
 
-iSSAprep <- function(dat_iSSA){
-  set.seed(53)
-  
-  #maybe have the subsetting dynamically with params would be a good idea
+iSSAprep <- function(sim) {
   dat <- sim$extractLand
   
-  dat[,range(year), by = .(jurisdiction)]
+  # subset years
+  dat.sub <- dat[year >= 2014 & year <= 2019]
   
-  dat.sub <- dat[year>=2014 & year<=2019]
-  dat.sub[,.N, by=.(jurisdiction)]
-  #setindex(dat, NULL)
+  jurisList <- list()
   
-  juris <- list()
+  # Manitoba (special case due to abundance of data)
+  mb.2015 <- dat[jurisdiction == "mb" & int.year == 2015]
+  mb.sub.id <- sample(unique(mb.2015$id), floor(length(unique(mb.2015$id)) * 0.50))
+  mb <- mb.2015[id %in% mb.sub.id]
+  mb[, id := as.factor(id)]
+  mb[, indiv_step_id := as.factor(indiv_step_id)]
+  jurisList[["mb"]] <- mb
   
-  ### mb ----
-  mb.2015 <- dat[jurisdiction == 'mb' & int.year ==2015]
-  length(unique(mb.2015$id))*.5
-  # worked when sampled 150 indivs
-  mb.sub.id <- sample(unique(mb.2015$id), floor(length(unique(mb.2015$id))*.50))
-  mb.2015.sub <- mb.2015[id %in% mb.sub.id]
-  mb.2015.sub[,id:=as.factor(id)]
-  mb.2015.sub[,indiv_step_id := as.factor(indiv_step_id)]
-  juris <- append(mb)
+  # list of other jurisdictions to process identically
+  otherJuris <- c("sk", "bc", "on", "nt", "yt")
   
-  #this is repeated code and should be made into a loop
-  ### sk ----
-  sk <- dat[jurisdiction == 'sk']
-  sk[,id:=as.factor(id)]
-  sk[,indiv_step_id := as.factor(indiv_step_id)]
-  juris <- append(sk)
-  
-  ### bc ----
-  bc <- dat.sub[jurisdiction == 'bc']
-  bc[,id:=as.factor(id)]
-  bc[,indiv_step_id := as.factor(indiv_step_id)]
-  juris <- append(sk)
-  
-  ### on ----
-  on <- dat.sub[jurisdiction == 'on']
-  on[,id:=as.factor(id)]
-  on[,indiv_step_id := as.factor(individ_step_id)]
-  juris <- append(on)
-  
-  ### nt ----
-  nt <- dat.sub[jurisdiction %in% c('nt')]
-  nt[,id:=as.factor(id)]
-  nt[,indiv_step_id := as.factor(indiv_step_id)]
-  juris <- append(nt)
-  
-  ### yt ----
-  yt <- dat.sub[jurisdiction == 'yt']
-  yt[,id:=as.factor(id)]
-  yt[,indiv_step_id := as.factor(individual_step_id)]
-  juris <- append(yt)
-  return(juris)
-}
-  
-  ### MODELS ----
-  
-  #map loop for running each jurisdiction
-  iSSAmodel <- function(){
-    #model run with 
-    glmm.sum <- list()
-    runglmm <- function (jur){
-      glmmTMB(Par$iSSAformula,
-              family = poisson(), data = juris,
-              map= list(theta = factor(c(NA,1:21))),
-              start = list(theta =c(log(1000), seq(0,0, length.out = 21)))
-      )}
-    
-    glmm.all <- map(jur = juris, function(jur){
-      runglmm(jur)
-      glmm.sum <- append(summary(jur))
-    })
-    sim$glmm.sum
+  for (j in otherJuris) {
+    dt <- dat.sub[jurisdiction == j]
+    dt[, id := as.factor(id)]
+    dt[, indiv_step_id := as.factor(indiv_step_id)]
+    jurisList[[j]] <- dt
   }
+  
+  return(jurisList)
+}
+
+iSSAmodel <- function(sim, jurisList) {
+  
+  models <- list()
+  summaries <- list()
+  
+  for (j in names(jurisList)) {
+    
+    dat <- jurisList[[j]]
+    
+    # MB uses 20 variance parameters (no year RE)
+    if (j == "mb") {
+      theta.map <- factor(c(NA, 1:20))
+      theta.start <- c(log(1000), rep(0, 20))
+    } else {
+      theta.map <- factor(c(NA, 1:21))
+      theta.start <- c(log(1000), rep(0, 21))
+    }
+    
+    mod <- glmmTMB(
+      formula = sim$param$iSSAformula,
+      family = poisson(),
+      data = dat,
+      map = list(theta = theta.map),
+      start = list(theta = theta.start)
+    )
+    
+    models[[j]] <- mod
+    summaries[[j]] <- summary(mod)
+  }
+  
+  sim$iSSAmodels <- models
+  sim$iSSAsummaries <- summaries
+  
+  return(sim)
+}
