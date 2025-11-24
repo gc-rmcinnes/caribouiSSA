@@ -31,7 +31,7 @@ defineModule(sim, list(
                     "Named list of seeds to use for each event (names)."),
     defineParameter(".useCache", "logical", FALSE, NA, NA,
                     "Should caching of events or module be used?"),
-    defineParameter(name = "iSSAformula", class = "formula", 
+    defineParameter(name = "iSSAformula", class = "character", 
                     default = "case_ ~ -1 +
                      I(log(sl_+1)) +
                      I(cos(ta_)) +
