@@ -74,14 +74,14 @@ defineModule(sim, list(
                     desc = "model selection for analysis")
   ),
   inputObjects = bindrows(
-    expectsInput(objectName = "extractLand", objectClass = "data.table",
-                 desc = "Landscape values and distance calculations matched by year to points")
-    #_targets outpputs
+    expectsInput(objectName = "extractVar", objectClass = "data.table",
+                 desc = "Variables of landscape values and distance calculations matched by year to points")
   ),
   outputObjects = bindrows(
-    #createsOutput("objectName", "objectClass", "output object description", ...),
-    #i need to put the issa output here, i dont think there is any others
-    createsOutput(objectName = NA, objectClass = NA, desc = NA)
+    createsOutput(objectName = "iSSAmodels", objectClass = "list",
+                  desc = "A list of iSSA models by jurisdiction"),
+    createsOutput(objectName = "iSSAsummaries", objectClass = "list",
+                  desc = "A list of iSSA model summaries by jurisdiction")
   )
 ))
 
@@ -110,9 +110,6 @@ Init <- function(sim) {
   return(invisible(sim))
   #xgboost function can also be called here
   #maybe a parameter that gets the model that the user wants?
-
-
-  return(invisible(sim))
 }
 
 
@@ -126,10 +123,10 @@ Init <- function(sim) {
 }
 
 iSSAprep <- function(sim) {
-  dat <- sim$extractLand
+  dat <- sim$extractVar
 
   # restrict years only once
-  #probably can change this to only the years that we're runnging (a param maybe?)
+  #probably can change this to only the years that we're running (a param maybe?)
   dat.sub <- dat[year >= 2014 & year <= 2021]
 
   # list to hold each cleaned jurisdiction dt
@@ -210,7 +207,6 @@ construct_covariates <- function(dt) {
 }
 
 iSSAmodel <- function(sim, jurisList) {
-  #browser()
   models <- list()
   summaries <- list()
 
@@ -230,7 +226,8 @@ iSSAmodel <- function(sim, jurisList) {
       theta.start <- c(log(1000), rep(0, 14))
     }
 
-    # I'm not sure deciduous is being capture in the formula
+    message("Starting iSSA for: ", j)
+    # deciduous is not being captured in the formula, may need to add it
     mod <- glmmTMB(
       formula = as.formula(Par$iSSAformula),
       family = poisson(),
@@ -241,8 +238,10 @@ iSSAmodel <- function(sim, jurisList) {
 
     models[[j]] <- mod
     summaries[[j]] <- summary(mod)
+    message("Finished iSSA for: ", j)
   }
 
+  #add a iSSA covariate output
   sim$iSSAmodels <- models
   sim$iSSAsummaries <- summaries
 
