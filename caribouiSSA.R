@@ -33,40 +33,50 @@ defineModule(sim, list(
                     "Should caching of events or module be used?"),
     defineParameter(name = "iSSAformula", class = "character",
                     default = "case_ ~ -1 +
-                    I(log(sl_+1)) +
-                    I(cos(ta_)) +
-                    I(log(sl_+1)):I(cos(ta_)) +
-                    prop_veg_start:I(log(sl_+1)) +
-                    prop_wets_start:I(log(sl_+1)) +
-                    prop_mixed_start:I(log(sl_+1)) +
-                    prop_needleleaf_start:I(log(sl_+1)) +
-                    prop_veg_end +
-                    prop_wets_end +
-                    prop_mixed_end +
-                    prop_needleleaf_end +
-                    I(log(timeSinceFire_end + 1)) +
-                    I(log(sl_+1)):I(log(timeSinceFire_start + 1)) +
-                    I(log(timeSinceHarvest_end + 1)) +
-                    I(log(sl_+1)):I(log(timeSinceHarvest_start + 1)) +
-                    I(log(distlf_end + 1)) +
-                    I(log(sl_+1)):I(log(distlf_start + 1)) +
-                    I(log(distpolys_end + 1)) +
-                    I(log(sl_+1)):I(log(distpolys_start + 1)) +
-                    (1 | indiv_step_id) +
-                    (0 + I(log(sl_+1)) | id) +
-                    (0 + I(cos(ta_)) | id) +
-                    (0 + I(log(sl_+1)):I(cos(ta_)) | id) +
-                    (0 + prop_mixed_start:I(log(sl_+1)) | id) +
-                    (0 + prop_needleleaf_start:I(log(sl_+1)) | id) +
-                    (0 + prop_veg_start:I(log(sl_+1)) | id) +
-                    (0 + prop_wets_start:I(log(sl_+1)) | id) +
-                    (0 + prop_mixed_end | id) +
-                    (0 + prop_needleleaf_end | id) +
-                    (0 + prop_veg_end | id) +
-                    (0 + prop_wets_end | id) +
-                    (0 + I(log(distlf_end + 1)) | id) +
-                    (0 + I(log(distpolys_end + 1)) | id) +
-                    (1 | year)",
+                              I(log(sl_ + 1)) +
+                              I(cos(ta_)) +
+                              I(log(sl_ + 1)) : I(cos(ta_)) +
+                              prop_needleleaf_start : I(log(sl_ + 1)) +
+                              prop_mixedforest_start : I(log(sl_ + 1)) +
+                              prop_veg_start : I(log(sl_ + 1)) +
+                              prop_wets_start : I(log(sl_ + 1)) +
+                              I(log(timeSinceFire_start + 1)) : I(log(sl_ + 1)) +
+                              I(log(timeSinceHarvest_start + 1)) : I(log(sl_ + 1)) +
+                              I(log(distpaved_start + 1)) : I(log(sl_ + 1)) +
+                              I(log(distunpaved_start + 1)) : I(log(sl_ + 1)) +
+                              I(log(distpolys_start + 1)) : I(log(sl_ + 1)) +
+                              prop_needleleaf_end +
+                              prop_mixedforest_end +
+                              prop_veg_end +
+                              prop_wets_end +
+                              I(log(timeSinceFire_end + 1)) +
+                              I(log(timeSinceHarvest_end + 1)) +
+                              I(log(distpaved_end + 1)) +
+                              I(log(distunpaved_end + 1)) +
+                              I(log(distpolys_end + 1)) +
+                              (1 | indiv_step_id) +
+                              (0 + I(log(sl_ + 1)) | id) +
+                              (0 + I(cos(ta_)) | id) +
+                              (0 + I(log(sl_ + 1)) : I(cos(ta_)) | id) +
+                              (0 + prop_needleleaf_start : I(log(sl_ + 1)) | id) +
+                              (0 + prop_mixedforest_start : I(log(sl_ + 1)) | id) +
+                              (0 + prop_veg_start : I(log(sl_ + 1)) | id) +
+                              (0 + prop_wets_start : I(log(sl_ + 1)) | id) +
+                              (0 + prop_needleleaf_end | id) +
+                              (0 + prop_mixedforest_end | id) +
+                              (0 + prop_veg_end | id) +
+                              (0 + prop_wets_end | id) +
+                              (0 + I(log(timeSinceFire_end + 1)) | id) +
+                              (0 + I(log(timeSinceFire_start + 1)) : I(log(sl_ + 1)) | id) +
+                              (0 + I(log(timeSinceHarvest_end + 1)) | id) +
+                              (0 + I(log(timeSinceHarvest_start + 1)) : I(log(sl_ + 1)) | id) +
+                              (0 + I(log(distpaved_end + 1)) | id) +
+                              (0 + I(log(distunpaved_end + 1)) | id) +
+                              (0 + I(log(distpolys_end + 1)) | id) +
+                              (0 + I(log(distpaved_start + 1)) : I(log(sl_ + 1)) | id) +
+                              (0 + I(log(distunpaved_start + 1)) : I(log(sl_ + 1)) | id) +
+                              (0 + I(log(distpolys_start + 1)) : I(log(sl_ + 1)) | id) +
+                              (1 | year)",
                     desc = 'The iSSA formula used for each jurisdiction'),
     defineParameter("jurisdiction", "character",c("BC", "SK", "MB", "YT", "NT", "ON"),
                     desc = "A list of jurisdictions to run"),
@@ -97,7 +107,6 @@ doEvent.caribouiSSA = function(sim, eventTime, eventType) {
 }
 
 Init <- function(sim) {
-
   if (Par$modelSelection == "iSSA") {
     #
     jurisList <- iSSAprep(sim)
@@ -123,88 +132,168 @@ Init <- function(sim) {
 }
 
 iSSAprep <- function(sim) {
+
   dat <- sim$extractVar
 
-  # restrict years only once
-  #probably can change this to only the years that we're running (a param maybe?)
-  dat.sub <- dat[year >= 2014 & year <= 2021]
-
-  # list to hold each cleaned jurisdiction dt
   juris_list <- list()
 
-  # loop only over jurisdictions provided
   for (j in Par$jurisdiction) {
 
     message("Preparing jurisdiction: ", j)
 
+    # Subset jurisdiction
     if (j == "MB") {
-      # MB gets special handling
+
+      # MB special sampling
       mb.2015 <- dat[jurisdiction == "mb" & int.year == 2015]
-      mb.sub.id <- sample(unique(mb.2015$id),
-                          floor(length(unique(mb.2015$id)) * 0.50))
+
+      mb.sub.id <- sample(
+        unique(mb.2015$id),
+        floor(length(unique(mb.2015$id)) * 0.50)
+      )
+
       dt <- mb.2015[id %in% mb.sub.id]
-    }
 
-    else if (j == "SK") {
-      dt <- dat[jurisdiction == "sk"]
-    }
-
-    else if (j == "BC") {
-      dt <- dat.sub[jurisdiction == "bc"]
-    }
-
-    else if (j == "ON") {
-      dt <- dat.sub[jurisdiction == "on"]
-    }
-
-    else if (j == "NT") {
-      dt <- dat.sub[jurisdiction == "nt"]
-    }
-
-    else if (j == "YT") {
-      dt <- dat.sub[jurisdiction == "yt"]
-    }
-
-    else {
-      warning("Jurisdiction ", j, " is not recognized. Skipping.")
-      next  # skip to next jurisdiction
-    }
-
-    # clean / prep the dt if it exists
-    if (nrow(dt) > 0) {
-      dt[, id := as.factor(id)]
-      dt[, indiv_step_id := as.factor(indiv_step_id)]
-      juris_list[[j]] <- dt
     } else {
-      warning("Jurisdiction ", j, " had zero rows. Skipped.")
+
+      # standard jurisdictions
+      dt <- dat[jurisdiction == tolower(j)]
     }
+
+    # Skip empty jurisdictions
+    if (nrow(dt) == 0) {
+      warning("Jurisdiction ", j, " had zero rows. Skipped.")
+      next
+    }
+
+    dt[, id := as.factor(id)]
+    dt[, indiv_step_id := as.factor(indiv_step_id)]
+    dt[, year := as.factor(year)]
+
+    # Construct covariates
     dt <- construct_covariates(dt)
+
+    # Save to list
+    juris_list[[j]] <- dt
   }
+
   return(juris_list)
 }
 
-construct_covariates <- function(dt) {
+# iSSAprep <- function(sim) {
+#   dat <- sim$extractVar
+#
+#   browser()
+#   # restrict years only once
+#   #probably can change this to only the years that we're running (a param maybe?)
+#   dat.sub <- dat[year >= 2013 & year <= 2021]
+#
+#   # list to hold each cleaned jurisdiction dt
+#   juris_list <- list()
+#
+#   # loop only over jurisdictions provided
+#   for (j in Par$jurisdiction) {
+#
+#     message("Preparing jurisdiction: ", j)
+#
+#     if (j == "MB") {
+#       # MB gets special handling
+#       mb.2015 <- dat[jurisdiction == "mb" & int.year == 2015]
+#       mb.sub.id <- sample(unique(mb.2015$id),
+#                           floor(length(unique(mb.2015$id)) * 0.50))
+#       dt <- mb.2015[id %in% mb.sub.id]
+#     }
+#
+#     else if (j == "SK") {
+#       dt <- dat[jurisdiction == "sk"]
+#     }
+#
+#     else if (j == "BC") {
+#       dt <- dat.sub[jurisdiction == "bc"]
+#     }
+#
+#     else if (j == "ON") {
+#       dt <- dat.sub[jurisdiction == "on"]
+#     }
+#
+#     else if (j == "NT") {
+#       dt <- dat.sub[jurisdiction == "nt"]
+#     }
+#
+#     else if (j == "YT") {
+#       dt <- dat.sub[jurisdiction == "yt"]
+#     }
+#
+#     else {
+#       warning("Jurisdiction ", j, " is not recognized. Skipping.")
+#       next  # skip to next jurisdiction
+#     }
+#
+#     # clean / prep the dt if it exists
+#     if (nrow(dt) > 0) {
+#       dt[, id := as.factor(id)]
+#       dt[, indiv_step_id := as.factor(indiv_step_id)]
+#       juris_list[[j]] <- dt
+#     } else {
+#       warning("Jurisdiction ", j, " had zero rows. Skipped.")
+#     }
+#     dt <- construct_covariates(dt)
+#   }
+#   return(juris_list)
+# }
 
-  ## Non-forest vegetation (veg)
+construct_covariates <- function(dt) {
+  # Non-forest vegetation (veg)
   dt[, prop_veg_start := rowSums(.SD, na.rm = TRUE),
      .SDcols = c("prop_herbs_start", "prop_shrub_start", "prop_bryoids_start")]
 
   dt[, prop_veg_end := rowSums(.SD, na.rm = TRUE),
      .SDcols = c("prop_herbs_end", "prop_shrub_end", "prop_bryoids_end")]
 
-  ## Wetlands combined (wets)
-  dt[, prop_wets_start := rowSums(.SD, na.rm = TRUE),
-     .SDcols = c("prop_wetland_start", "prop_wet_treed_start")]
+  # Wetlands only
+  dt[, prop_wets_start := prop_wetland_start]
+  dt[, prop_wets_end   := prop_wetland_end]
 
-  dt[, prop_wets_end := rowSums(.SD, na.rm = TRUE),
-     .SDcols = c("prop_wetland_end", "prop_wet_treed_end")]
+  # Conifer - needleleaf + wet_treed
+  dt[, prop_needleleaf_start := rowSums(.SD, na.rm = TRUE),
+     .SDcols = c("prop_needleleaf_start", "prop_wet_treed_start")]
 
-  ## Minimum distance to *any* road (combined)
-  dt[, distlf_start := pmin(distpaved_start, distunpaved_start, na.rm = TRUE)]
-  dt[, distlf_end   := pmin(distpaved_end,   distunpaved_end,   na.rm = TRUE)]
+  dt[, prop_needleleaf_end := rowSums(.SD, na.rm = TRUE),
+     .SDcols = c("prop_needleleaf_end", "prop_wet_treed_end")]
+
+  # Mixed - mixed + deciduous
+  dt[, prop_mixedforest_start := rowSums(.SD, na.rm = TRUE),
+     .SDcols = c("prop_mixed_start", "prop_deciduous_start")]
+
+  dt[, prop_mixedforest_end := rowSums(.SD, na.rm = TRUE),
+     .SDcols = c("prop_mixed_end", "prop_deciduous_end")]
 
   return(invisible(dt))
 }
+
+
+# construct_covariates <- function(dt) {
+#   ## Non-forest vegetation (veg)
+#   dt[, prop_veg_start := rowSums(.SD, na.rm = TRUE),
+#      .SDcols = c("prop_herbs_start", "prop_shrub_start", "prop_bryoids_start")]
+#
+#   dt[, prop_veg_end := rowSums(.SD, na.rm = TRUE),
+#      .SDcols = c("prop_herbs_end", "prop_shrub_end", "prop_bryoids_end")]
+#
+#   ## Wetlands combined (wets)
+#   dt[, prop_wets_start := rowSums(.SD, na.rm = TRUE),
+#      .SDcols = c("prop_wetland_start", "prop_wet_treed_start")]
+#
+#   dt[, prop_wets_end := rowSums(.SD, na.rm = TRUE),
+#      .SDcols = c("prop_wetland_end", "prop_wet_treed_end")]
+#
+#
+#   ## Minimum distance to *any* road (combined)
+#   dt[, distlf_start := pmin(distpaved_start, distunpaved_start, na.rm = TRUE)]
+#   dt[, distlf_end   := pmin(distpaved_end,   distunpaved_end,   na.rm = TRUE)]
+#
+#   return(invisible(dt))
+# }
 
 iSSAmodel <- function(sim, jurisList) {
   models <- list()
@@ -214,26 +303,13 @@ iSSAmodel <- function(sim, jurisList) {
 
     dat <- jurisList[[j]]
 
-    # MB uses 20 variance parameters (no year RE)
-    # need to update the formula so that mb doesnt have year RE
-    if (j == "mb") {
-      theta.map <- factor(c(NA, 1:20))
-      theta.start <- c(log(1000), rep(0, 20))
-    } else {
-      #this seems like it should be the same as before
-      #but it errored and needed to be changed
-      theta.map <- factor(c(NA, 1:14))
-      theta.start <- c(log(1000), rep(0, 14))
-    }
-
     message("Starting iSSA for: ", j)
-    # deciduous is not being captured in the formula, may need to add it
     mod <- glmmTMB(
       formula = as.formula(Par$iSSAformula),
-      family = poisson(),
-      data = dat,
-      map = list(theta = theta.map),
-      start = list(theta = theta.start)
+      family  = poisson(),
+      data    = dat,
+      map     = list(theta = factor(c(NA, 1:21))),
+      start   = list(theta = c(log(1000), rep(0, 21)))
     )
 
     models[[j]] <- mod
