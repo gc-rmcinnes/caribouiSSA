@@ -81,11 +81,13 @@ defineModule(sim, list(
     defineParameter("jurisdiction", "character",c("BC", "SK", "MB", "YT", "NT", "ON"),
                     desc = "A list of jurisdictions to run"),
     defineParameter("modelSelection", "character", "iSSA",
-                    desc = "model selection for analysis")
+                    desc = "model selection for analysis"),
+    defineParameter("modeScale", "character", "jurisdictional",
+                    desc = "define the scale to run the iSSA. Can be 'jurisdictional', 'global', or 'both'.")
   ),
   inputObjects = bindrows(
-    expectsInput(objectName = "extractVar", objectClass = "data.table",
-                 desc = "Variables of landscape values and distance calculations matched by year to points")
+    expectsInput(objectName = 'extractedVariables', objectClass = "data.table",
+                 desc = "variables of landscape values at the animal locations and distance calculations matched by year to the animal locations")
   ),
   outputObjects = bindrows(
     createsOutput(objectName = "iSSAmodels", objectClass = "list",
@@ -99,28 +101,25 @@ doEvent.caribouiSSA = function(sim, eventTime, eventType) {
   switch(
     eventType,
     init = {
-      sim <- Init(sim)
+
+      sim <- scheduleEvent(sim, time(sim), "caribouiSSA", "prepareCovariates")
+      sim <- scheduleEvent(sim, time(sim), "caribouiSSA", "runiSSAmodel")
+    },
+    prepareCovariates = {
+      dat <- sim$extractedVariables
+      sim$juris_list <- iSSAprep(dat)
+    },
+    runiSSAmodel = {
+      iSSAoutput <- iSSAmodel(
+        juris_list = sim$juris_list,
+        scale = Par$modeScale)
+      sim$iSSAmodels <- iSSAoutput$models
+      sim$iSSAsummaries <- iSSAoutput$summaries
     },
     warning(noEventWarning(sim))
   )
   return(invisible(sim))
 }
-
-Init <- function(sim) {
-  if (Par$modelSelection == "iSSA") {
-    #
-    jurisList <- iSSAprep(sim)
-    sim <- iSSAmodel(sim, jurisList)
-  }
-  else if (Par$modelSelection != "iSSA") {
-    message("Other models are not completed yet, please run an iSSA")
-  }
-
-  return(invisible(sim))
-  #xgboost function can also be called here
-  #maybe a parameter that gets the model that the user wants?
-}
-
 
 .inputObjects <- function(sim) {
 
@@ -129,197 +128,4 @@ Init <- function(sim) {
 
 
   return(invisible(sim))
-}
-
-iSSAprep <- function(sim) {
-
-  dat <- sim$extractVar
-
-  juris_list <- list()
-
-  for (j in Par$jurisdiction) {
-
-    message("Preparing jurisdiction: ", j)
-
-    # Subset jurisdiction
-    if (j == "MB") {
-
-      # MB special sampling
-      mb.2015 <- dat[jurisdiction == "mb" & int.year == 2015]
-
-      mb.sub.id <- sample(
-        unique(mb.2015$id),
-        floor(length(unique(mb.2015$id)) * 0.50)
-      )
-
-      dt <- mb.2015[id %in% mb.sub.id]
-
-    } else {
-
-      # standard jurisdictions
-      dt <- dat[jurisdiction == tolower(j)]
-    }
-
-    # Skip empty jurisdictions
-    if (nrow(dt) == 0) {
-      warning("Jurisdiction ", j, " had zero rows. Skipped.")
-      next
-    }
-
-    dt[, id := as.factor(id)]
-    dt[, indiv_step_id := as.factor(indiv_step_id)]
-    dt[, year := as.factor(year)]
-
-    # Construct covariates
-    dt <- construct_covariates(dt)
-
-    # Save to list
-    juris_list[[j]] <- dt
-  }
-
-  return(juris_list)
-}
-
-# iSSAprep <- function(sim) {
-#   dat <- sim$extractVar
-#
-#   browser()
-#   # restrict years only once
-#   #probably can change this to only the years that we're running (a param maybe?)
-#   dat.sub <- dat[year >= 2013 & year <= 2021]
-#
-#   # list to hold each cleaned jurisdiction dt
-#   juris_list <- list()
-#
-#   # loop only over jurisdictions provided
-#   for (j in Par$jurisdiction) {
-#
-#     message("Preparing jurisdiction: ", j)
-#
-#     if (j == "MB") {
-#       # MB gets special handling
-#       mb.2015 <- dat[jurisdiction == "mb" & int.year == 2015]
-#       mb.sub.id <- sample(unique(mb.2015$id),
-#                           floor(length(unique(mb.2015$id)) * 0.50))
-#       dt <- mb.2015[id %in% mb.sub.id]
-#     }
-#
-#     else if (j == "SK") {
-#       dt <- dat[jurisdiction == "sk"]
-#     }
-#
-#     else if (j == "BC") {
-#       dt <- dat.sub[jurisdiction == "bc"]
-#     }
-#
-#     else if (j == "ON") {
-#       dt <- dat.sub[jurisdiction == "on"]
-#     }
-#
-#     else if (j == "NT") {
-#       dt <- dat.sub[jurisdiction == "nt"]
-#     }
-#
-#     else if (j == "YT") {
-#       dt <- dat.sub[jurisdiction == "yt"]
-#     }
-#
-#     else {
-#       warning("Jurisdiction ", j, " is not recognized. Skipping.")
-#       next  # skip to next jurisdiction
-#     }
-#
-#     # clean / prep the dt if it exists
-#     if (nrow(dt) > 0) {
-#       dt[, id := as.factor(id)]
-#       dt[, indiv_step_id := as.factor(indiv_step_id)]
-#       juris_list[[j]] <- dt
-#     } else {
-#       warning("Jurisdiction ", j, " had zero rows. Skipped.")
-#     }
-#     dt <- construct_covariates(dt)
-#   }
-#   return(juris_list)
-# }
-
-construct_covariates <- function(dt) {
-  # Non-forest vegetation (veg)
-  dt[, prop_veg_start := rowSums(.SD, na.rm = TRUE),
-     .SDcols = c("prop_herbs_start", "prop_shrub_start", "prop_bryoids_start")]
-
-  dt[, prop_veg_end := rowSums(.SD, na.rm = TRUE),
-     .SDcols = c("prop_herbs_end", "prop_shrub_end", "prop_bryoids_end")]
-
-  # Wetlands only
-  dt[, prop_wets_start := prop_wetland_start]
-  dt[, prop_wets_end   := prop_wetland_end]
-
-  # Conifer - needleleaf + wet_treed
-  dt[, prop_needleleaf_start := rowSums(.SD, na.rm = TRUE),
-     .SDcols = c("prop_needleleaf_start", "prop_wet_treed_start")]
-
-  dt[, prop_needleleaf_end := rowSums(.SD, na.rm = TRUE),
-     .SDcols = c("prop_needleleaf_end", "prop_wet_treed_end")]
-
-  # Mixed - mixed + deciduous
-  dt[, prop_mixedforest_start := rowSums(.SD, na.rm = TRUE),
-     .SDcols = c("prop_mixed_start", "prop_deciduous_start")]
-
-  dt[, prop_mixedforest_end := rowSums(.SD, na.rm = TRUE),
-     .SDcols = c("prop_mixed_end", "prop_deciduous_end")]
-
-  return(invisible(dt))
-}
-
-
-# construct_covariates <- function(dt) {
-#   ## Non-forest vegetation (veg)
-#   dt[, prop_veg_start := rowSums(.SD, na.rm = TRUE),
-#      .SDcols = c("prop_herbs_start", "prop_shrub_start", "prop_bryoids_start")]
-#
-#   dt[, prop_veg_end := rowSums(.SD, na.rm = TRUE),
-#      .SDcols = c("prop_herbs_end", "prop_shrub_end", "prop_bryoids_end")]
-#
-#   ## Wetlands combined (wets)
-#   dt[, prop_wets_start := rowSums(.SD, na.rm = TRUE),
-#      .SDcols = c("prop_wetland_start", "prop_wet_treed_start")]
-#
-#   dt[, prop_wets_end := rowSums(.SD, na.rm = TRUE),
-#      .SDcols = c("prop_wetland_end", "prop_wet_treed_end")]
-#
-#
-#   ## Minimum distance to *any* road (combined)
-#   dt[, distlf_start := pmin(distpaved_start, distunpaved_start, na.rm = TRUE)]
-#   dt[, distlf_end   := pmin(distpaved_end,   distunpaved_end,   na.rm = TRUE)]
-#
-#   return(invisible(dt))
-# }
-
-iSSAmodel <- function(sim, jurisList) {
-  models <- list()
-  summaries <- list()
-
-  for (j in names(jurisList)) {
-
-    dat <- jurisList[[j]]
-
-    message("Starting iSSA for: ", j)
-    mod <- glmmTMB(
-      formula = as.formula(Par$iSSAformula),
-      family  = poisson(),
-      data    = dat,
-      map     = list(theta = factor(c(NA, 1:21))),
-      start   = list(theta = c(log(1000), rep(0, 21)))
-    )
-
-    models[[j]] <- mod
-    summaries[[j]] <- summary(mod)
-    message("Finished iSSA for: ", j)
-  }
-
-  #add a iSSA covariate output
-  sim$iSSAmodels <- models
-  sim$iSSAsummaries <- summaries
-
-  return(sim)
 }
