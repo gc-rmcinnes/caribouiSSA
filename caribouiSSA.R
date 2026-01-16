@@ -91,7 +91,7 @@ defineModule(sim, list(
   ),
   outputObjects = bindrows(
     createsOutput(objectName = "iSSAmodels", objectClass = "list",
-                  desc = "A list of iSSA models by jurisdiction"),
+                  desc = "A list of 'glmmTMB' iSSA models by jurisdiction or global models"),
     createsOutput(objectName = "iSSAsummaries", objectClass = "list",
                   desc = "A list of iSSA model summaries by jurisdiction")
   )
