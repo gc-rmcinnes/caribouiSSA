@@ -79,7 +79,7 @@ defineModule(sim, list(
                               (1 | year)",
                     desc = 'The iSSA formula used for each jurisdiction'),
     defineParameter("jurisdiction", "character",c("BC", "SK", "MB", "YT", "NT", "ON"),
-                    desc = "A list of jurisdictions to run"),
+                    desc = "A list of jurisdictions to run iSSA models on"),
     defineParameter("modelSelection", "character", "iSSA",
                     desc = "model selection for analysis"),
     defineParameter("modeScale", "character", "jurisdictional",
@@ -91,9 +91,9 @@ defineModule(sim, list(
   ),
   outputObjects = bindrows(
     createsOutput(objectName = "iSSAmodels", objectClass = "list",
-                  desc = "A list of 'glmmTMB' iSSA models by jurisdiction or global models"),
+                  desc = "A list of 'glmmTMB' iSSA models by jurisdiction and/or global scales"),
     createsOutput(objectName = "iSSAsummaries", objectClass = "list",
-                  desc = "A list of iSSA model summaries by jurisdiction")
+                  desc = "A list of iSSA model summaries by jurisdiction and/or global scales")
   )
 ))
 
@@ -106,10 +106,12 @@ doEvent.caribouiSSA = function(sim, eventTime, eventType) {
       sim <- scheduleEvent(sim, time(sim), "caribouiSSA", "runiSSAmodel")
     },
     prepareCovariates = {
+      # harmonize the covariates with the iSSA formula
       dat <- sim$extractedVariables
       sim$juris_list <- iSSAprep(dat)
     },
     runiSSAmodel = {
+      # run jurisdictional and/or global iSSA models
       iSSAoutput <- iSSAmodel(
         juris_list = sim$juris_list,
         scale = Par$modeScale)

@@ -1,3 +1,4 @@
+# harmonize the covariates with the iSSA model
 construct_covariates <- function(dt) {
   # Non-forest vegetation (veg)
   dt[, prop_veg_start := rowSums(.SD, na.rm = TRUE),
