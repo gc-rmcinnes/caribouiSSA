@@ -38,6 +38,16 @@ iSSAprep <- function(dat) {
     # Construct covariates
     dt <- construct_covariates(dt)
 
+    # End point check
+    n_before <- nrow(dt)
+    dt <- dt[complete.cases(dt[, c("x2_", "y2_")]), ]
+    n_after <- nrow(dt)
+
+    if (n_before != n_after) {
+      message("  Removed ", n_before - n_after,
+              " rows with missing end point values in ", j)
+    }
+
     # Save to list
     juris_list[[j]] <- dt
   }
