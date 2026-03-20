@@ -31,6 +31,36 @@ iSSAprep <- function(dat) {
       next
     }
 
+    # Most recent 6-year filter
+    if (Par$modelScale %in% c("global", "both")) {
+
+      message("Applying most recent 6-year filter for ", j)
+
+      # get year per strata (all rows in a strata should share year)
+      strata_years <- dt[, .(year = unique(year)), by = indiv_step_id]
+
+      strata_years <- strata_years[, .(year = max(year)), by = indiv_step_id]
+
+      max_year <- max(strata_years$year, na.rm = TRUE)
+      keep_years <- (max_year - 5):max_year
+      # identify strata to keep
+      keep_strata <- strata_years[year %in% keep_years, indiv_step_id]
+
+      n_before <- nrow(dt)
+
+      # filter entire strata
+      dt <- dt[indiv_step_id %in% keep_strata]
+
+      n_after <- nrow(dt)
+
+      message(
+        "  Jurisdiction: ", j,
+        " | Years: ", paste(keep_years, collapse = ", "),
+        " | Rows: ", n_after,
+        " | Strata: ", length(unique(dt$indiv_step_id))
+      )
+    }
+
     dt[, id := as.factor(id)]
     dt[, indiv_step_id := as.factor(indiv_step_id)]
     dt[, year := as.factor(year)]
@@ -40,17 +70,24 @@ iSSAprep <- function(dat) {
 
     # End point check
     n_before <- nrow(dt)
-    dt <- dt[complete.cases(dt[, c("x2_", "y2_")]), ]
+
+    # Identify strata with missing endpoints
+    bad_steps <- dt[!complete.cases(dt[, c("x2_", "y2_")]), unique(indiv_step_id)]
+
+    # Remove entire strata
+    if (length(bad_steps) > 0) {
+      dt <- dt[!indiv_step_id %in% bad_steps]
+    }
+
     n_after <- nrow(dt)
 
     if (n_before != n_after) {
       message("  Removed ", n_before - n_after,
-              " rows with missing end point values in ", j)
+              " rows belonging to strata with missing endpoints in ", j)
     }
 
     # Save to list
     juris_list[[j]] <- dt
   }
-
   return(juris_list)
 }
