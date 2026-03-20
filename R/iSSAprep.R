@@ -31,18 +31,22 @@ iSSAprep <- function(dat) {
       next
     }
 
-    # Most recent 6-year filter
+    # Most recent N-year filter (GLOBAL)
     if (Par$modelScale %in% c("global", "both")) {
 
-      message("Applying most recent 6-year filter for ", j)
+      n_years <- Par$globalModelFilter
+      max_year <- max(Par$histLandYears, na.rm = TRUE)
 
-      # get year per strata (all rows in a strata should share year)
-      strata_years <- dt[, .(year = unique(year)), by = indiv_step_id]
+      keep_years <- (max_year - n_years + 1):max_year
 
-      strata_years <- strata_years[, .(year = max(year)), by = indiv_step_id]
+      message(
+        "Applying most recent ", n_years,
+        "-year filter for ", j
+      )
 
-      max_year <- max(strata_years$year, na.rm = TRUE)
-      keep_years <- (max_year - 5):max_year
+      # get year per strata (safe even if duplicated)
+      strata_years <- dt[, .(year = max(year)), by = indiv_step_id]
+
       # identify strata to keep
       keep_strata <- strata_years[year %in% keep_years, indiv_step_id]
 

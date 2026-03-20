@@ -76,7 +76,9 @@ defineModule(sim, list(
     defineParameter("modelScale", "character", "jurisdictional",
                     desc = "define the scale to run the iSSA. Can be 'jurisdictional', 'global', or 'both'."),
     defineParameter("outputFolderID", "character", "https://drive.google.com/drive/folders/1CRSY_tJucL3E8VDgUYEv9WXuG1nKImH3", NA, NA,
-      "Google Drive folder ID for workflow outputs")
+      "Google Drive folder ID for workflow outputs"),
+    defineParameter("globalModelFilter", "numeric", 5, NA, NA,
+                    "The number of years to subset the tracks for the global model")
   ),
   inputObjects = bindrows(
     expectsInput(objectName = 'extractedVariables', objectClass = "data.table",
