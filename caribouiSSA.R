@@ -2,7 +2,7 @@ defineModule(sim, list(
   name = "caribouiSSA",
   description = "",
   keywords = "",
-  authors = c(person("Julie", "Tuner", email = "", role = c("aut", "cre")),
+  authors = c(person("Julie W.", "Turner", email = "", role = c("aut", "cre")),
               person("Rory", "McInnes", email = "", role = c("aut", "cre"))),
   childModules = character(0),
   version = list(caribouiSSA = "0.0.0.9000"),
