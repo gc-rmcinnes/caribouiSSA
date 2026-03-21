@@ -1,7 +1,6 @@
 iSSAmodel <- function(scale, juris_list) {
   models <- list()
   summaries <- list()
-
   # run the jurisdictional models
   if (scale == "jurisdictional"){
     for (j in names(juris_list)) {
@@ -13,8 +12,8 @@ iSSAmodel <- function(scale, juris_list) {
         formula = as.formula(Par$iSSAformula),
         family  = poisson(),
         data    = dat,
-        map     = list(theta = factor(c(NA, 1:22))),
-        start   = list(theta = c(log(1000), rep(0, 22)))
+        map     = list(theta = factor(c(NA, 1:17))),
+        start   = list(theta = c(log(1000), rep(0, 17)))
       )
 
       models[[j]] <- mod
@@ -28,11 +27,11 @@ iSSAmodel <- function(scale, juris_list) {
     dat.all <- rbindlist(juris_list)
     message("Starting global iSSA")
     mod <- glmmTMB(
-      formula = as.formula(Par$iSSAglobalformula),
+      formula = as.formula(Par$iSSAformula),
       family  = poisson(),
       data    = dat.all,
-      map     = list(theta = factor(c(NA, 1:21))),
-      start   = list(theta = c(log(1000), rep(0, 21)))
+      map     = list(theta = factor(c(NA, 1:17))),
+      start   = list(theta = c(log(1000), rep(0, 17)))
     )
     models[["global"]] <- mod
     summaries[["global"]] <- summary(mod)
