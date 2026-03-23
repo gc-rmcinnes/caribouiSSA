@@ -66,7 +66,7 @@ defineModule(sim, list(
                               (0 + I(log(distpaved_end + 1)) | id) +
                               (0 + I(log(distunpaved_end + 1)) | id) +
                               (0 + I(log(distpolys_end + 1)) | id) +
-                              ECOREGION_start +
+                              (1|ECOREGION_start) +
                               (1 | year)",
                     desc = 'The iSSA formula used for each jurisdiction'),
     defineParameter("jurisdiction", "character",c("BC", "SK", "MB", "YT", "NT", "ON"),
