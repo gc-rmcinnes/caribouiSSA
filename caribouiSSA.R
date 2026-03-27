@@ -126,7 +126,8 @@ doEvent.caribouiSSA = function(sim, eventTime, eventType) {
 
       iSSAoutput <- iSSAmodel(
         juris_list = sim$juris_list,
-        scale = Par$modelScale)
+        scale = Par$modelScale) |>
+        Cache(.functionName = "iSSAmodel", useCloud = TRUE)
 
       sim$iSSAmodels <- iSSAoutput$models
       sim$iSSAsummaries <- iSSAoutput$summaries
