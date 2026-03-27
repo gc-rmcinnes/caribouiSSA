@@ -1,7 +1,9 @@
 defineModule(sim, list(
   name = "caribouiSSA",
-  description = "",
-  keywords = "",
+  description = paste0("This module prepares covariates for an iSSA model,",
+                       "collects the rasters of input data used in the model,",
+                       "and calculates a global and/or jurisdictional iSSA model."),
+  keywords = c("iSSA"),
   authors = c(person("Julie W.", "Turner", email = "", role = c("aut", "cre")),
               person("Rory", "McInnes", email = "rory_mcinnes@hotmail.com", role = c("aut", "cre"))),
   childModules = character(0),
@@ -144,32 +146,6 @@ doEvent.caribouiSSA = function(sim, eventTime, eventType) {
         stop("Package 'googledrive' is required for this event.")
       }
 
-      # # Get root folder
-      # root_id <- getOption("reproducible.cloudFolderID")
-      #
-      # if (is.null(root_id)) {
-      #   stop("reproducible.cloudFolderID is not set.")
-      # }
-      #
-      # root_folder <- googledrive::as_id(root_id)
-      #
-      # # Create / get subfolder
-      # subfolder_name <- "workflowOutputs"
-      #
-      # subfolder <- googledrive::drive_find(
-      #   q = paste0(
-      #     "name = 'workflowOutputs' and '",
-      #     root_folder,
-      #     "' in parents and trashed = false"
-      #   )
-      # )
-      #
-      # if (nrow(subfolder) == 0) {
-      #   subfolder <- googledrive::drive_mkdir(
-      #     name = "workflowOutputs",
-      #     path = root_folder
-      #   )
-      # }
       folder_id <- Par$outputFolderID
 
       if (is.na(folder_id)) {
@@ -216,7 +192,7 @@ doEvent.caribouiSSA = function(sim, eventTime, eventType) {
         overwrite = TRUE,
         gdal = c("COMPRESS=LZW")
       )
-      browser()
+
       message("Uploading modelLand")
 
       upload_with_retry <- function(file, path, name, max_attempts = 3) {
@@ -260,7 +236,7 @@ doEvent.caribouiSSA = function(sim, eventTime, eventType) {
       googledrive::drive_upload(
         media = tmp_models,
         path = output_folder,
-        name = "iSSAmodels.RData",
+        name = paste0("iSSAmodels", .studyAreaName, ".RData"),
         overwrite = TRUE
       )
 
