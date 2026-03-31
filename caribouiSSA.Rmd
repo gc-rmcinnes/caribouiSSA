@@ -45,10 +45,7 @@ download.file(url = "https://img.shields.io/badge/Made%20with-Markdown-1f425f.pn
 
 ### Module summary
 
-Provide a brief summary of what the module does / how to use the module.
-
-Module documentation should be written so that others can use your module.
-This is a template for module documentation, and should be changed to reflect your module.
+This module uses an Integrated Step Selection Analysis (iSSA), which utilizes the movement characteristics to determine habitat selection by comparing the actual used landscape to what landscape was potentially available in the random steps. The iSSA is done at two spatial scales, a jurisdictional model (1/jurisdiction with data) and a global model of all the data across all jurisdictions.
 
 ### Module inputs and parameters
 
@@ -75,7 +72,9 @@ knitr::kable(df_params, caption = "List of (ref:caribouiSSA) parameters and thei
 
 ### Events
 
-Describe what happens for each event type.
+prepareCovariates - this event combines some of the proportional columns from the extraction process so the model inputs align with the formula.
+prepareModelLand - this prepares the raster stack of all the source rasters used in the model, this stack will be used in UD modules downstream
+runiSSAmodel - This event generates an iSSA model, the specifics of the model (global/jurisdictional/ or both) are determined by the parameter set up
 
 ### Plotting
 
@@ -83,11 +82,15 @@ Write what is plotted.
 
 ### Saving
 
-Write what is saved.
+This module saves the iSSA model and the raster stack to a google drive folder for downstream use
 
 ### Module outputs
 
 Description of the module outputs (Table \@ref(tab:moduleOutputs-caribouiSSA)).
+
+iSSAmodels - a list of all models that the module created, named by jurisdiction or "global"
+iSSAsummaries - a list of simplified summaries for each model created, used for quick model assessment
+modelLand - a raster stack of all the rasters used in the extraction process that are then used in the model, this will be needed for downstream UD generation
 
 ```{r moduleOutputs-caribouiSSA, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE}
 df_outputs <- SpaDES.core::moduleOutputs("caribouiSSA", "C:/Users/rmcinnes/Documents/moduleDev")

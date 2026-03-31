@@ -237,7 +237,7 @@ doEvent.caribouiSSA = function(sim, eventTime, eventType) {
       googledrive::drive_upload(
         media = tmp_models,
         path = output_folder,
-        name = paste0("iSSAmodels", .studyAreaName, ".RData"),
+        name = paste0("iSSAmodels", Par$.studyAreaName, ".RData"),
         overwrite = TRUE
       )
 
